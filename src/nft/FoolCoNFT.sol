@@ -32,8 +32,6 @@ contract FoolCoNFT is ERC721, ERC721URIStorage, Ownable {
         emit Mint(to, tokenId, _tokenURI);
     }
 
-    
-
     // 设置元数据
     function _setTokenURI(
         uint256 tokenId,

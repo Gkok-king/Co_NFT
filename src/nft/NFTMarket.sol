@@ -68,7 +68,7 @@ contract NFTMarket is IERC721Receiver {
             "Token transfer failed"
         );
 
-        nft.safeTransferFrom(address(this), msg.sender, tokenId);
+        nft.transferFrom(address(this), msg.sender, tokenId);
 
         delete listings[tokenId];
 
@@ -82,7 +82,7 @@ contract NFTMarket is IERC721Receiver {
         bytes calldata data
     ) external override returns (bytes4) {
         // 限制
-        require(msg.sender == address(token), "Invalid token contract");
+        require(msg.sender == address(operator), "Invalid token contract");
 
         uint256 value = abi.decode(data, (uint256));
         Listing memory listing = listings[tokenId];
