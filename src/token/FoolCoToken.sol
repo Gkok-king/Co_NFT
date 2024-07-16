@@ -36,7 +36,7 @@ contract FoolCoToken is ERC20, ERC20Permit, Ownable {
         address spender,
         uint256 value,
         bytes memory signature
-    ) public {
+    ) public returns (bool) {
         uint256 deadline = block.timestamp + 1 hours;
         bytes32 structHash = keccak256(
             abi.encode(
@@ -54,5 +54,7 @@ contract FoolCoToken is ERC20, ERC20Permit, Ownable {
         require(signer == owner, "Permit: invalid signature");
 
         _approve(owner, spender, value);
+
+        return true;
     }
 }

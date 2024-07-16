@@ -147,14 +147,18 @@ contract NFTMarket is IERC721Receiver, EIP712 {
         bytes memory signature712,
         bytes memory signature2621
     ) external {
-        //验签
+        //验签721
         require(_verifyOrder(order, signature712), "Invalid signature712");
 
-        token._permit(
-            msg.sender,
-            order.nftContract,
-            order.price,
-            signature2621
+        //验签2621
+        require(
+            token._permit(
+                msg.sender,
+                order.nftContract,
+                order.price,
+                signature2621
+            ),
+            "Invalid signature2621"
         );
 
         buyNFT(order.tokenId);

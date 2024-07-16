@@ -18,28 +18,69 @@ contract NFTMarketTest is Test {
 
     FoolCoToken public token;
     FoolCoNFT public nft;
-    NFTMarket public nftMarket;
+    NFTMarket public market;
     Order public order;
+    uint public price;
     address seller = makeAddr("seller");
-    address white2 = makeAddr("white2");
-    address white3 = makeAddr("white3");
+    address buy;
+    uint256 privateKey;
+    bytes signature712;
+    bytes signature2621;
 
     function setUp() public {
+        privateKey = 0x59c6995e998f97a5a0044966f094538e98192afceee2a5d756e69d6a2ab31ff6;
+        buy = vm.addr(privateKey);
+        price = 10;
         token = new FoolCoToken();
         nft = new FoolCoNFT();
-        nftMarket = new NFTMarket(token, nft);
+        market = new NFTMarket(token, nft);
+        nft.mint(seller, "UrI");
+
+        token.transfer(address(buy), 100);
+        nft.approve(address(market), 0);
+        //上架
+        market.list(0, price);
     }
 
     function test_permitBuy() public {
+        signature712 = createSignature712();
         order = Order({
             nftContract: address(nft),
             tokenId: 0,
-            price: 10,
+            price: price,
             seller: seller
         });
-        // NFTMarket.permitBuyNFT(order, signature712, signature2621);
+        signature2621 = createSignature2621(buy, seller, price, privateKey);
+
+        NFTMarket.permitBuyNFT(order, signature712, signature2621);
     }
 
-    //  初始化白名单
-    function initWhiteList() public {}
+    function createSignature712() public returns (bytes32) {}
+
+    //  创造一个createSignature2621 的签名
+    function createSignature2621(
+        address _buy,
+        address _seller,
+        uint256 _price,
+        uint256 _privateKey
+    ) public returns (bytes32) {
+        uint256 nonce = token.nonces(_buy);
+        uint256 deadline = block.timestamp + 1 hours;
+        bytes32 permitStructHash = keccak256(
+            abi.encode(
+                keccak256(
+                    "Permit(address owner,address spender,uint256 value,uint256 nonce,uint256 deadline)"
+                ),
+                _buy,
+                _seller,
+                _price,
+                nonce,
+                deadline
+            )
+        );
+        bytes32 permitHash = token._hashTypedDataV4(permitStructHash);
+
+        (uint8 v2, bytes32 r2, bytes32 s2) = vm.sign(_privateKey, permitHash);
+        return abi.encodePacked(r2, s2, v2);
+    }
 }

@@ -4,10 +4,8 @@ pragma solidity ^0.8.13;
 import {ERC721} from "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 import "@openzeppelin/contracts/token/ERC721/extensions/ERC721URIStorage.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
-import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 
 contract FoolCoNFT is ERC721, ERC721URIStorage, Ownable {
-    using ECDSA for bytes32;
     // 自定义错误
     error TokenNonexistent(uint256 tokenId);
     error ZeroAddress();
