@@ -6,6 +6,8 @@ import "@openzeppelin/contracts/token/ERC721/extensions/ERC721URIStorage.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
+import "@openzeppelin/contracts/utils/cryptography/EIP712.sol";
+
 import "./FoolCoNFT.sol";
 import "../token/FoolCoToken.sol";
 
@@ -13,7 +15,8 @@ import "../token/FoolCoToken.sol";
 
 // list() : 实现上架功能，NFT 持有者可以设定一个价格（需要多少个 Token 购买该 NFT）并上架 NFT 到 NFT 市场。
 // buyNFT() : 实现购买 NFT 功能，用户转入所定价的 token 数量，获得对应的 NFT。
-contract NFTMarket is IERC721Receiver {
+contract NFTMarket is IERC721Receiver, EIP712 {
+    using ECDSA for bytes32;
     FoolCoToken public token;
     FoolCoNFT public nft;
 
@@ -23,6 +26,18 @@ contract NFTMarket is IERC721Receiver {
     }
 
     mapping(uint256 => Listing) public listings;
+
+    //订单结构体
+    struct Order {
+        address nftContract;
+        uint256 tokenId;
+        uint256 price;
+        address seller;
+    }
+    bytes32 private constant ORDER_TYPEHASH =
+        keccak256(
+            "Order(address nftContract,uint256 tokenId,uint256 price,address seller)"
+        );
 
     event NFTListed(
         uint256 indexed tokenId,
@@ -42,7 +57,7 @@ contract NFTMarket is IERC721Receiver {
         uint256 price
     );
 
-    constructor(FoolCoToken _token, FoolCoNFT _nft) {
+    constructor(FoolCoToken _token, FoolCoNFT _nft) EIP712("NFTMarket", "1") {
         token = _token;
         nft = _nft;
     }
@@ -58,7 +73,7 @@ contract NFTMarket is IERC721Receiver {
         emit NFTListed(tokenId, price, msg.sender);
     }
 
-    function buyNFT(uint256 tokenId) external {
+    function buyNFT(uint256 tokenId) public {
         Listing memory listing = listings[tokenId];
 
         require(listing.price > 0, "NFT not listed for sale");
@@ -75,6 +90,7 @@ contract NFTMarket is IERC721Receiver {
         emit NFTBought(tokenId, listing.price, msg.sender, listing.seller);
     }
 
+    // 回调方式来买nft
     function onERC721Received(
         address operator,
         address from,
@@ -105,5 +121,42 @@ contract NFTMarket is IERC721Receiver {
         );
         emit NFTSold(tokenId, listing.seller, from, listing.price);
         return IERC721Receiver.onERC721Received.selector;
+    }
+
+    function _verifyOrder(
+        Order memory order,
+        bytes memory signature
+    ) internal view returns (bool) {
+        bytes32 digest = _hashTypedDataV4(
+            keccak256(
+                abi.encode(
+                    ORDER_TYPEHASH,
+                    order.nftContract,
+                    order.tokenId,
+                    order.price,
+                    order.seller
+                )
+            )
+        );
+        return ECDSA.recover(digest, signature) == order.seller;
+    }
+
+    // 离线签名授权
+    function permitBuyNFT(
+        Order memory order,
+        bytes memory signature712,
+        bytes memory signature2621
+    ) external {
+        //验签
+        require(_verifyOrder(order, signature712), "Invalid signature712");
+
+        token._permit(
+            msg.sender,
+            order.nftContract,
+            order.price,
+            signature2621
+        );
+
+        buyNFT(order.tokenId);
     }
 }

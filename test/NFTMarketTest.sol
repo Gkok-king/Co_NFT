@@ -1,17 +1,32 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity ^0.8.13;
-
-import {Test, console} from "forge-std/Test.sol";
+pragma solidity ^0.8.20;
 import "../src/nft/FoolCoNFT.sol";
 import "../src/nft/NFTMarket.sol";
 import "../src/token/FoolCoToken.sol";
-import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+import {Test, console} from "forge-std/Test.sol";
 
 // 1 上架NFT：测试上架成功和失败情况，要求断言错误信息和上架事件。
 // 2 购买NFT：测试购买成功、自己购买自己的NFT、NFT被重复购买、支付Token过多或者过少情况，要求断言错误信息和购买事件。
 // 3 模糊测试：测试随机使用 0.01-10000 Token价格上架NFT，并随机使用任意Address购买NFT
 // 「可选」不可变测试：测试无论如何买卖，NFTMarket合约中都不可能有 Token 持仓
 contract NFTMarketTest is Test {
+    event NFTListed(
+        uint256 indexed tokenId,
+        uint256 indexed price,
+        address indexed seller
+    );
+    event NFTBought(
+        uint256 indexed tokenId,
+        uint256 price,
+        address indexed buyer,
+        address indexed seller
+    );
+    event NFTSold(
+        uint256 indexed tokenId,
+        address indexed seller,
+        address indexed buyer,
+        uint256 price
+    );
     FoolCoToken public foolCoToken;
     FoolCoNFT public foolCoNFT;
     NFTMarket public nftMarket;
@@ -58,7 +73,7 @@ contract NFTMarketTest is Test {
         vm.startPrank(nftOwner);
         foolCoNFT.approve(address(nftMarket), 0);
         vm.expectEmit(true, true, true, false);
-        emit NFTMarket.NFTListed(0, 100, nftOwner);
+        emit NFTListed(0, 100, nftOwner);
         nftMarket.list(0, 100);
         vm.stopPrank();
     }
@@ -90,7 +105,7 @@ contract NFTMarketTest is Test {
         vm.startPrank(A);
         foolCoToken.approve(address(nftMarket), 100);
         vm.expectEmit(true, true, true, false);
-        emit NFTMarket.NFTBought(0, 100, A, nftOwner);
+        emit NFTBought(0, 100, A, nftOwner);
         nftMarket.buyNFT(0);
         vm.stopPrank();
     }
@@ -228,7 +243,7 @@ contract NFTMarketTest is Test {
         vm.startPrank(nftOwner);
         foolCoNFT.approve(address(nftMarket), 0);
         vm.expectEmit(true, true, true, false);
-        emit NFTMarket.NFTListed(0, price, nftOwner);
+        emit NFTListed(0, price, nftOwner);
         nftMarket.list(0, price);
         vm.stopPrank();
     }
@@ -259,8 +274,8 @@ contract NFTMarketTest is Test {
         vm.startPrank(buyer);
         console.log(address(nftMarket));
         foolCoToken.approve(address(nftMarket), 100);
-        // vm.expectEmit(true, true, true, false);
-        // emit NFTMarket.NFTBought(0, 100, buyer, nftOwner);
+        vm.expectEmit(true, true, true, false);
+        emit NFTBought(0, 100, buyer, nftOwner);
         nftMarket.buyNFT(0);
         vm.stopPrank();
     }

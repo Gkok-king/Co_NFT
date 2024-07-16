@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity ^0.8.13;
+pragma solidity ^0.8.20;
 
 import {Script, console} from "forge-std/Script.sol";
 
@@ -30,6 +30,7 @@ contract FoolCoTokenScript is Script {
         console.log("deployed to:", address(foolCoNFT));
     }
 
+    //  调用线上合约铸造nft
     function mint() public {
         // 从环境变量中读取私钥
         uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
