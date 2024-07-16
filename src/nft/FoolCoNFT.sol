@@ -32,23 +32,23 @@ contract FoolCoNFT is ERC721, ERC721URIStorage, Ownable {
         emit Mint(to, tokenId, _tokenURI);
     }
 
-    // 设置元数据
-    function _setTokenURI(
-        uint256 tokenId,
-        string memory _tokenURI
-    ) internal override {
-        if (_ownerOf(tokenId) == address(0)) {
-            revert TokenNonexistent(tokenId);
-        }
-        tokenURIs[tokenId] = _tokenURI;
-    }
-
     function tokenURI(
         uint256 tokenId
     ) public view override(ERC721, ERC721URIStorage) returns (string memory) {
         if (_ownerOf(tokenId) == address(0)) {
             revert TokenNonexistent(tokenId);
         }
+        //元数组的
+        string memory _tokenURI = tokenURIs[tokenId];
+        string memory base = _baseURI();
+
+        if (bytes(base).length == 0) {
+            return _tokenURI;
+        }
+        if (bytes(_tokenURI).length > 0) {
+            return string(abi.encodePacked(base, _tokenURI));
+        }
+
         return super.tokenURI(tokenId);
     }
 
