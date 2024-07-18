@@ -10,6 +10,7 @@ import "@openzeppelin/contracts/utils/cryptography/EIP712.sol";
 
 import "./FoolCoNFT.sol";
 import "../token/FoolCoToken.sol";
+import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 
 // //编写一个简单的 NFT市场合约，使用自己的发行的 Token 来买卖 NFT， 函数的方法有：
 
@@ -19,6 +20,7 @@ contract NFTMarket is IERC721Receiver, EIP712 {
     using ECDSA for bytes32;
     FoolCoToken public token;
     FoolCoNFT public nft;
+    address public admin;
 
     struct Listing {
         uint256 price;
@@ -28,16 +30,8 @@ contract NFTMarket is IERC721Receiver, EIP712 {
     mapping(uint256 => Listing) public listings;
 
     //订单结构体
-    struct Order {
-        address nftContract;
-        uint256 tokenId;
-        uint256 price;
-        address seller;
-    }
-    bytes32 private constant ORDER_TYPEHASH =
-        keccak256(
-            "Order(address nftContract,uint256 tokenId,uint256 price,address seller)"
-        );
+    bytes32 public constant ORDER_TYPEHASH =
+        keccak256("Order(address nft,address buyer)");
 
     event NFTListed(
         uint256 indexed tokenId,
@@ -60,6 +54,7 @@ contract NFTMarket is IERC721Receiver, EIP712 {
     constructor(FoolCoToken _token, FoolCoNFT _nft) EIP712("NFTMarket", "1") {
         token = _token;
         nft = _nft;
+        admin = msg.sender;
     }
 
     function list(uint256 tokenId, uint256 price) external {
@@ -123,44 +118,73 @@ contract NFTMarket is IERC721Receiver, EIP712 {
         return IERC721Receiver.onERC721Received.selector;
     }
 
-    function _verifyOrder(
-        Order memory order,
-        bytes memory signature
-    ) internal view returns (bool) {
-        bytes32 digest = _hashTypedDataV4(
-            keccak256(
-                abi.encode(
-                    ORDER_TYPEHASH,
-                    order.nftContract,
-                    order.tokenId,
-                    order.price,
-                    order.seller
-                )
-            )
-        );
-        return ECDSA.recover(digest, signature) == order.seller;
-    }
-
     // 离线签名授权
     function permitBuyNFT(
-        Order memory order,
-        bytes memory signature712,
-        bytes memory signature2621
+        uint256 _tokenId,
+        address _nft,
+        // bytes memory signature2621,
+        uint8 v,
+        bytes32 r,
+        bytes32 s
     ) external {
         //验签721
-        require(_verifyOrder(order, signature712), "Invalid signature712");
+        require(!_verifyOrder(_nft, v, r, s), "Invalid signature712");
 
         //验签2621
-        require(
-            token._permit(
-                msg.sender,
-                order.nftContract,
-                order.price,
-                signature2621
-            ),
-            "Invalid signature2621"
-        );
+        // require(
+        //     token._permit(
+        //         msg.sender,
+        //         order.nftContract,
+        //         order.price,
+        //         signature2621
+        //     ),
+        //     "Invalid signature2621"
+        // );
 
-        buyNFT(order.tokenId);
+        buyNFT(_tokenId);
+    }
+
+    // //创造签名
+    // function creatSign(
+    //     Order memory _order,
+    //     address privateKey
+    // ) public view returns (bytes32) {
+    //     bytes32 dataHash = keccak256(
+    //         abi.encodePacked(
+    //             "\x19\x01",
+    //             DOMAIN_SEPARATOR(),
+    //             _hashTypedDataV4(_order)
+    //         )
+    //     );
+    //     return ECDSA.sign(privateKey, dataHash);
+    // }
+
+    // 验签是否白名单
+    function _verifyOrder(
+        address _nft,
+        uint8 v,
+        bytes32 r,
+        bytes32 s
+    ) internal view returns (bool) {
+        bytes32 structHash = _hashTypedDataV4(_nft, msg.sender);
+        bytes32 hash = keccak256(
+            abi.encodePacked("\x19\x01", DOMAIN_SEPARATOR(), structHash)
+        );
+        address signer = hash.recover(v, r, s);
+
+        return signer == admin;
+    }
+
+    //实现的	Domain Separator：
+    function DOMAIN_SEPARATOR() public view returns (bytes32) {
+        return _domainSeparatorV4();
+    }
+
+    //签名结构体
+    function _hashTypedDataV4(
+        address _nft,
+        address _buyer
+    ) private pure returns (bytes32) {
+        return keccak256(abi.encode(ORDER_TYPEHASH, _nft, _buyer));
     }
 }
