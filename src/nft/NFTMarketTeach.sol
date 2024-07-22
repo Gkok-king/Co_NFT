@@ -13,7 +13,26 @@ contract NFTMarketTeach is Ownable(msg.sender), EIP712("NFTMarket", "1") {
     using ECDSA for bytes32;
     address public feeTo;
     uint256 public constant feeBP = 30;
+    // 白名单签名者
     address public whiteListSigner;
+
+    // 上架签名地址
+    address public listSigner;
+    // 上架签名HashType
+    bytes32 public constant _LIMIT_ORDER_TYPE_HASH =
+        keccak256(
+            "LimitOrder(address seller,address nft,uint256 tokenId,address payToken,uint256 price,uint256 deadline)"
+        );
+    // 上架结构体
+    struct LimitOrder {
+        address seller;
+        address nft;
+        uint256 tokenId;
+        address payToken;
+        uint256 price;
+        uint256 deadLine;
+        bytes signature;
+    }
 
     // 挂单的所有订单
     mapping(bytes32 => SellerOrder) public listingOrders;
@@ -29,11 +48,15 @@ contract NFTMarketTeach is Ownable(msg.sender), EIP712("NFTMarket", "1") {
         uint256 deadLine;
     }
 
-    //订单结构体
-    bytes32 public constant ORDER_TYPEHASH =
-        keccak256("Order(address nft,address buyer)");
-
     constructor() {}
+
+    function DOMAIN_SEPARATOR() external view virtual returns (bytes32) {
+        return _domainSeparatorV4();
+    }
+
+    function setListSigner(address _listSigner) public onlyOwner {
+        listSigner = _listSigner;
+    }
 
     //费率开关
     function setFeeTo(address to) external onlyOwner {
@@ -51,6 +74,7 @@ contract NFTMarketTeach is Ownable(msg.sender), EIP712("NFTMarket", "1") {
         return listingOrders[id].seller == address(0) ? bytes32(0x00) : id;
     }
 
+    // 上架
     function list(
         address nft,
         uint256 tokenId,
@@ -91,6 +115,60 @@ contract NFTMarketTeach is Ownable(msg.sender), EIP712("NFTMarket", "1") {
         emit List(nft, tokenId, orderId, msg.sender, payToken, price, deadLine);
     }
 
+    //离线签名上架
+    function list(LimitOrder memory _listOrder) public {
+        require(_listOrder.deadLine > 0, "deadline is in the past");
+        require(_listOrder.price > 0, "Price must be greater than zero");
+        require(
+            _listOrder.payToken == address(0) ||
+                IERC20(_listOrder.payToken).totalSupply() > 0,
+            "token is error"
+        );
+
+        // safe check
+        require(
+            IERC721(_listOrder.nft).ownerOf(_listOrder.tokenId) == msg.sender,
+            "not Owner"
+        );
+
+        bytes32 hashTypeData = _hashTypedDataV4(
+            keccak256(
+                abi.encode(
+                    _LIMIT_ORDER_TYPE_HASH,
+                    _listOrder.seller,
+                    _listOrder.nft,
+                    _listOrder.tokenId,
+                    _listOrder.price,
+                    _listOrder.deadLine
+                )
+            )
+        );
+        address signature = ECDSA.recover(hashTypeData, _listOrder.signature);
+        // require(signature != _listOrder.seller, "singnature error");
+
+        SellerOrder memory order = SellerOrder({
+            seller: _listOrder.seller,
+            nft: _listOrder.nft,
+            tokenId: _listOrder.tokenId,
+            payToken: _listOrder.payToken,
+            price: _listOrder.price,
+            deadLine: _listOrder.deadLine
+        });
+        bytes32 orderId = keccak256(abi.encode(order));
+        listingOrders[orderId] = order;
+        _lastIds[_listOrder.nft][_listOrder.tokenId] = orderId;
+
+        emit List(
+            _listOrder.nft,
+            _listOrder.tokenId,
+            orderId,
+            msg.sender,
+            _listOrder.payToken,
+            _listOrder.price,
+            _listOrder.deadLine
+        );
+    }
+
     // 取消上架
     function cancel(bytes32 orderId) external {
         address seller = listingOrders[orderId].seller;
@@ -128,6 +206,7 @@ contract NFTMarketTeach is Ownable(msg.sender), EIP712("NFTMarket", "1") {
             msg.sender,
             order.tokenId
         );
+        // 确定币种
         uint256 fee = feeReceiver == address(0)
             ? 0
             : (order.price * feeBP) / 10000;
