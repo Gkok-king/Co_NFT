@@ -89,15 +89,31 @@ contract IDOCoTokenTest is Test {
         vm.warp(block.timestamp + 31 days);
 
         // console.log(token.balanceOf(address(idoSale)));
-        // vm.expectEmit(true, true, false, false);
-        // emit claimEvent(A, 10000000000000000000);
+        vm.expectEmit(true, true, false, false);
+        emit claimEvent(A, 333333333333333333333333);
         // console.log("d==========>", idoSale.getSomeOne());
         // console.log("d==========>", idoSale.getTokenTotalAmount());
         idoSale.claim();
         vm.stopPrank();
     }
 
+    function test_IDOCoToken_adminClaim() public {
+        vm.deal(A, 10 ether);
+        vm.deal(B, 10 ether);
+        vm.prank(B);
+        idoSale.withdraw{value: 10 ether}();
+        vm.prank(A);
+        idoSale.withdraw{value: 5 ether}();
+        vm.warp(block.timestamp + 31 days);
+        vm.prank(admin);
+
+        vm.expectEmit(true, true, false, false);
+        emit adminClaimEvent(admin, 15 ether);
+        idoSale.adminClaim();
+    }
+
     event withdrawEvent(address indexed, uint256 indexed);
     event claimEvent(address indexed, uint256 indexed);
     event refundEvent(address indexed, uint256 indexed);
+    event adminClaimEvent(address indexed, uint256 indexed);
 }

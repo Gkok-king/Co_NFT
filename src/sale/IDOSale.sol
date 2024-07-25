@@ -54,7 +54,7 @@ contract IDOSale is Ownable {
         contributions[msg.sender] += msg.value;
         totalFundsRaised += msg.value;
 
-        //todo 部分给团队
+        //todo 这里也可以直接设计成，部分给团队什么的
         // uint toTeam = (msg.value * 1) / 10;
         // admin.call{value: toTeam};
 
@@ -93,6 +93,14 @@ contract IDOSale is Ownable {
         emit claimEvent(msg.sender, amount);
     }
 
+    function adminClaim() public onlySuccess onlyOwner {
+        uint256 balance = address(this).balance;
+        require(balance > 0, "No funds to claim");
+        // 将收到的资金转移到指定地址
+        payable(admin).transfer(balance);
+        emit adminClaimEvent(admin, balance);
+    }
+
     function getSomeOne() public view returns (uint256) {
         return contributions[msg.sender];
     }
@@ -119,4 +127,5 @@ contract IDOSale is Ownable {
     event withdrawEvent(address indexed, uint256 indexed);
     event claimEvent(address indexed, uint256 indexed);
     event refundEvent(address indexed, uint256 indexed);
+    event adminClaimEvent(address indexed, uint256 indexed);
 }
