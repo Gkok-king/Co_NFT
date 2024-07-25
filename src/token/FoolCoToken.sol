@@ -18,7 +18,7 @@ contract FoolCoToken is ERC20, ERC20Permit, Ownable {
         ERC20Permit("GongToken")
         Ownable(_msgSender())
     {
-        _mint(_msgSender(), 10000 * 10 ** decimals());
+        _mint(_msgSender(), 10000000 * 10 ** decimals());
     }
 
     function mint(address to, uint256 amount) public onlyOwner {
