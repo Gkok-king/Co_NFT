@@ -58,9 +58,12 @@ contract FactoryV1Test is Test {
             "",
             admin
         );
-        vm.startPrank(A);
-        vm.expectRevert("Incorrect Ether value");
-        factoryV1.mintInscription(a1);
-        vm.stopPrank();
+
+        factoryV2 = FactoryV2(address(proxy));
+        // 调用新方法
+        (bool s, ) = address(proxy).call(
+            abi.encodeWithSignature("mintInscription(address)", a1)
+        );
+        assertEq(s, true);
     }
 }

@@ -144,7 +144,7 @@ contract NFTMarketTeach is Ownable(msg.sender), EIP712("NFTMarket", "1") {
             )
         );
         address signature = ECDSA.recover(hashTypeData, _listOrder.signature);
-        // require(signature != _listOrder.seller, "singnature error");
+        require(signature != _listOrder.seller, "singnature error");
 
         SellerOrder memory order = SellerOrder({
             seller: _listOrder.seller,

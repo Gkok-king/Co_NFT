@@ -42,7 +42,9 @@ contract FactoryV2 is Initializable, OwnableUpgradeable, UUPSUpgradeable {
 
     function _authorizeUpgrade(
         address newImplementation
-    ) internal override onlyOwner {}
+    ) internal override onlyOwner {
+        tokenImplementation = newImplementation;
+    }
 
     function deployInscription(
         string memory _name,
