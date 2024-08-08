@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.20;
-import "../src/nft/FoolCoNFT.sol";
-import "../src/nft/NFTMarket.sol";
-import "../src/token/FoolCoToken.sol";
+import "../../src/nft/FoolCoNFT.sol";
+import "../../src/nft/NFTMarket.sol";
+import "../../src/token/FoolCoToken.sol";
 import {Test, console} from "forge-std/Test.sol";
 
 // 1 上架NFT：测试上架成功和失败情况，要求断言错误信息和上架事件。

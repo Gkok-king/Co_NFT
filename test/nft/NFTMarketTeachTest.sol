@@ -2,9 +2,9 @@
 pragma solidity ^0.8.20;
 
 import {Test, console} from "forge-std/Test.sol";
-import "../src/nft/FoolCoNFT.sol";
-import "../src/nft/NFTMarketTeach.sol";
-import "../src/token/FoolCoToken.sol";
+import "../../src/nft/FoolCoNFT.sol";
+import "../../src/nft/NFTMarketTeach.sol";
+import "../../src/token/FoolCoToken.sol";
 
 contract NFTMarketTeachTest is Test {
     FoolCoToken public token;

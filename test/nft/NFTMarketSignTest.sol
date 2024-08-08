@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.20;
-import "../src/nft/FoolCoNFT.sol";
-import "../src/nft/NFTMarket.sol";
-import "../src/token/FoolCoToken.sol";
+import "../../src/nft/FoolCoNFT.sol";
+import "../../src/nft/NFTMarket.sol";
+import "../../src/token/FoolCoToken.sol";
 import {Test, console} from "forge-std/Test.sol";
 
 // 实现只有离线授权的白名单地址才可以购买 NFT （用自己的名称发行 NFT，再上架） 。

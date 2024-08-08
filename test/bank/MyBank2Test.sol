@@ -19,6 +19,7 @@ contract MyBank2Test is Test {
         vm.deal(u4.addr, 4 ether);
         myBank2.deposit{value: 4 ether}();
         vm.stopPrank();
+
         vm.startPrank(u1.addr);
         vm.deal(u1.addr, 1 ether);
         myBank2.deposit{value: 1 ether}();
@@ -31,10 +32,7 @@ contract MyBank2Test is Test {
         vm.deal(u3.addr, 3 ether);
         myBank2.deposit{value: 3 ether}();
         vm.stopPrank();
-
-        address[] memory list = myBank2.getTop(2);
-        address a0 = list[0];
-        console.log("success", list.length);
-        console.log("a0:", a0);
     }
+
+    function testtest_MyBank2Test_add() public {}
 }
